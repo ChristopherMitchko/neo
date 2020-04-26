@@ -1,5 +1,6 @@
 #!/usr/bin/env bash
-
+# neofetch command
+neofetch --disable kernel packages shell theme term icons resolution wm_theme --ascii --colors 06 01 01 05 01 06 04 --ascii_colors 06 --ascii_distro manjaro
 # Source global definitions
 if [ -f /etc/bashrc ];
 then . /etc/bashrc
@@ -38,7 +39,7 @@ blue="\[\e[1;33m\]"
 if [ $EUID != 0 ] ; then
   #PS1="$normal[${blue}$(echo $MACHTYPE)$normal]"
   #PS1+="\n"
-  PS1="$normal[$red$(date +'%-I':%M:%P)$normal]-\$ $normal"
+  PS1="$normal[$red$(date +'%-I':%M:%P)$normal]-\w>\$ $normal"
 else
   #PS1="$normal[${red}$(echo $MACHTYPE)$normal]"
   #PS1+="\n"
