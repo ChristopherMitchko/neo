@@ -1,0 +1,44 @@
+#----------------------------------------------------------------------------------------------------#
+#                   APT-MIRROR SOURCE REPO'S
+#----------------------------------------------------------------------------------------------------#
+
+#----------------------------------------------------------------------------------------------------#
+set base_path    /alt
+set mirror_path  $base_path/mirror
+set skel_path    $base_path/skel
+set var_path     $base_path/var
+set cleanscript  $var_path/clean.sh
+set nthreads     3
+set _tilde 0
+#----------------------------------------------------------------------------------------------------#
+
+#----------------------------------------------------------------------------------------------------#
+# GOALS= website & repo for apt
+# LOG: job1= parrot, jessie and stretch source packages
+# LATTER= museum
+#
+#
+#----------------------------------------------------------------------------------------------------#
+
+deb-src https://mirror.clarkson.edu/parrot/  bionic main contrib non-free
+deb-src https://mirror.clarkson.edu/parrot/  lts main contrib non-free
+deb-src https://mirror.clarkson.edu/parrot/  stretch main contrib non-free
+deb-src https://mirror.clarkson.edu/parrot/  parrot main contrib non-free
+deb-src http://mirror.cc.columbia.edu/debian/ jessie main contrib non-free
+deb-src http://mirror.cc.columbia.edu/debian/ stretch main contrib non-free
+
+#-------------------------------SOURCE PACKAGE MUSEUM-----------------------------------------------#
+#deb-src http://archive.debian.org/debian-archive/debian/ hamm main contrib non-free
+#deb-src http://archive.debian.org/debian-archive/debian/ slink main contrib non-free
+#deb-src http://archive.debian.org/debian-archive/debian/ potato main contrib non-free
+#deb-src http://archive.debian.org/debian-archive/debian/ woody main contrib non-free
+#deb-src http://archive.debian.org/debian-archive/debian/ sarge main contrib non-free
+#deb-src http://archive.debian.org/debian-archive/debian/ etch main contrib non-free
+#deb-src http://archive.debian.org/debian-archive/debian/ lenny main contrib non-free
+#deb-src http://archive.debian.org/debian-archive/debian/ squeeze main contrib non-free
+#deb-src http://archive.debian.org/debian-archive/debian/ wheezy main contrib non-free
+#--------------------------------SOURCE PACKAGE MUSEUM----------------------------------------------#
+
+
+########## DANGER: WILL DELETE OTHER REPO PACKAGES ################
+########## clean http://ftp.us.debian.org/debian #################

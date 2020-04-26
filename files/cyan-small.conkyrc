@@ -1,0 +1,49 @@
+### Crazy Conky  ########################################################
+#own_window_type normal
+own_window_type dock
+background yes 
+font Liberation:size=9 
+xftfont Sans Seriff:size=9 
+use_xft yes 
+xftalpha 0.1 
+update_interval 4.0 
+total_run_times 0 
+own_window yes 
+own_window_type override 
+own_window_transparent yes 
+own_window_hints undecorated,below,sticky,skip_taskbar,skip_pager 
+double_buffer yes
+draw_shades no 
+draw_outline no 
+draw_borders no 
+draw_graph_borders no
+minimum_size 280 350
+#maximum_width 400 
+default_color ffff00 
+default_shade_color 000000 
+default_outline_color 000000 
+alignment top_right 
+gap_x 10
+gap_y 35 
+no_buffers yes 
+cpu_avg_samples 2 
+override_utf8_locale no 
+uppercase no # set to yes if you want all text to be in uppercase 
+use_spacer yes 
+
+TEXT
+${color blue}${hr 1}
+${color 0ab1ff}${execi 1000 cat /proc/cpuinfo | grep 'model name' | sed -e 's/model name.*: //'| uniq | cut -c 1-39}
+${color 0ab1ff}Core 1   ${alignr}${cpu cpu1}%
+${color cyan}${cpugraph cpu0}
+${color 0ab1ff}Core 2   ${alignr}${cpu cpu2}%
+${color cyan}${cpugraph cpu1}
+${color 0ab1ff}${hr 1}
+${color 0ab1ff}RAM:  ${alignr}$mem  /  ${alignr}$memmax
+${color 0ab1ff}Root:     ${alignr}${fs_used /}  / ${alignr}${fs_size /}
+${color blue}${hr 1}
+${color 0ab1ff}${time %I:%M%p}${alignr}${time %A, %D}${font}
+${image /home/ghost/cyan-small.png -p 10,0}
+
+
+### Crazy Conky  ########################################################

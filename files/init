@@ -1,0 +1,93 @@
+#!/bin/bash
+
+echo -e "Welcome to \\e[0;36mLinux \\e[0;36mFrom \\e[0;31mSource\\e[0m (/init)"
+
+# Wait 5 second or until any keybord key is pressed.
+read -t 5 -n1 -s key
+
+if [ ! "$key" = "" ] ; then
+  # Print second message on screen.
+  cat /etc/msg/init_02.txt
+
+  # Set flag which indicates that we have obtained controlling terminal.
+  export PID1_SHELL=true
+
+  # Interactive shell with controlling tty as PID 1.
+  exec setsid cttyhack sh
+fi
+
+dmesg -n 1
+echo "Most kernel messages have been suppressed."
+
+mount -t devtmpfs none /dev
+mount -t proc none /proc
+mount -t tmpfs none /tmp -o mode=1777
+mount -t sysfs none /sys
+
+mkdir -p /dev/pts
+
+mount -t devpts none /dev/pts
+
+echo "Mounted all core filesystems. Ready to continue."
+
+# Create the new mountpoint in RAM.
+mount -t tmpfs none /mnt
+
+# Create folders for all critical file systems.
+mkdir /mnt/dev
+mkdir /mnt/sys
+mkdir /mnt/proc
+mkdir /mnt/tmp
+echo "Created folders for all critical file systems."
+
+# Copy root folders in the new mountpoint.
+echo -e "Copying the root file system to \\e[94m/mnt\\e[0m."
+for dir in */ ; do
+  case $dir in
+    dev/)
+      # skip
+      ;;
+    proc/)
+      # skip
+      ;;
+    sys/)
+      # skip
+      ;;
+    mnt/)
+      # skip
+      ;;
+    tmp/)
+      # skip
+      ;;
+    *)
+      cp -a $dir /mnt
+      ;;
+  esac
+done
+
+# Move critical file systems to the new mountpoint.
+mount --move /dev /mnt/dev
+mount --move /sys /mnt/sys
+mount --move /proc /mnt/proc
+mount --move /tmp /mnt/tmp
+echo -e "Mount locations \\e[94m/dev\\e[0m, \\e[94m/sys\\e[0m, \\e[94m/tmp\\e[0m and \\e[94m/proc\\e[0m have been moved to \\e[94m/mnt\\e[0m."
+
+if [ "$key" = "" ] ; then
+  # Use default initialization logic based on configuration in '/etc/inittab'.
+  echo -e "Executing \\e[32m/sbin/init\\e[0m as PID 1."
+  exec /sbin/openrc-init
+else
+  # Print second message on screen.
+  cat /etc/msg/03_init_02.txt
+
+  if [ "$PID1_SHELL" = "true" ] ; then
+    # PID1_SHELL flag is set which means we have controlling terminal.
+    unset PID1_SHELL
+    exec sh
+  else
+    # Interactive shell with controlling tty as PID 1.
+    exec setsid cttyhack sh
+  fi
+fi
+
+echo -e "Welcome to \\e[0;36mLinux \\e[0;36mFrom \\e[0;31mSource\\e[0m (/sbin/init)"

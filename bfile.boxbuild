@@ -1,0 +1,42 @@
+Package="file"
+Version="5.36"
+Section="devel"
+Priority="required"
+Architecture="x86_64"
+Maintainer="linuxexorcist-mitchkochristopher@gmail.com"
+Conflicts="none"
+Breaks="none"
+Pre_Depends="none"
+Depends="none"
+Build_Depends="bash, binutils, bzip2, coreutils, diffutils, gawk, gcc, glibc, grep, make, sed, xz, zlib"
+Built_Using="none"
+Enhances="libmagic"
+Description="Utility for determining the type of a given file or files."
+Source="file-5.36.tar.gz"
+Homepage="ftp://ftp.astron.com/pub/file/file-5.36.tar.gz"
+#[ -f /etc/neoconf ] && source /etc/neoconf || { echo -e "\e[31mERROR: /etc/neoconf not found! \e[00m" 1>&2 ; exit 1; }
+################[Dont rearrange control feild lines, only change values, ok]######################
+
+prepare() {
+	echo "prepare"
+	cd ${Package}-${Version}
+	pwd
+}
+prepare
+build() {
+	echo "build"
+#	./configure --prefix=/tools &
+#make -j$(nproc)
+#make DESTDIR=$installdir install
+}
+build
+check() {
+	echo "check"
+}
+check
+
+package() {
+	echo "package"
+}
+package
+###############################[END

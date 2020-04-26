@@ -1,0 +1,26 @@
+root:x:0:0::/root:/bin/bash
+bin:x:1:1::/:/sbin/nologin
+daemon:x:2:2::/:/sbin/nologin
+mail:x:8:12::/var/spool/mail:/sbin/nologin
+ftp:x:14:11::/srv/ftp:/sbin/nologin
+http:x:33:33::/srv/http:/sbin/nologin
+nobody:x:65534:65534:Nobody:/:/sbin/nologin
+dbus:x:81:81:System Message Bus:/:/sbin/nologin
+systemd-journal-remote:x:982:982:systemd Journal Remote:/:/sbin/nologin
+systemd-network:x:981:981:systemd Network Management:/:/sbin/nologin
+systemd-resolve:x:980:980:systemd Resolver:/:/sbin/nologin
+systemd-timesync:x:979:979:systemd Time Synchronization:/:/sbin/nologin
+systemd-coredump:x:978:978:systemd Core Dumper:/:/sbin/nologin
+uuidd:x:68:68::/:/sbin/nologin
+nbd:x:977:977:Network Block Device:/var/empty:/sbin/nologin
+avahi:x:976:976:Avahi mDNS/DNS-SD daemon:/:/sbin/nologin
+colord:x:975:975:Color management daemon:/var/lib/colord:/sbin/nologin
+partimag:x:110:110:Partimage user:/:/sbin/nologin
+polkitd:x:102:102:PolicyKit daemon:/:/sbin/nologin
+rpc:x:32:32:Rpcbind Daemon:/var/lib/rpcbind:/sbin/nologin
+rtkit:x:133:133:RealtimeKit:/proc:/sbin/nologin
+git:x:974:974:git daemon user:/:/usr/bin/git-shell
+lightdm:x:620:620:Light Display Manager:/var/lib/lightdm:/sbin/nologin
+usbmux:x:140:140:usbmux user:/:/sbin/nologin
+skull:x:1000:985::/home/skull:/bin/bash
+_apt:x:118:3003::/nonexistent:/bin/false

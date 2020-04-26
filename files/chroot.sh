@@ -1,0 +1,19 @@
+#####################################################################
+#
+#####################################################################
+export aa=$(pwd)
+export LFS=$aa/xroot
+
+#mv $aa/files/source $LFS
+#mv $aa/files/tools $LFS
+
+mount -v --bind /dev $LFS/dev
+mount -vt devpts devpts $LFS/dev/pts -o gid=5,mode=620
+mount -vt proc proc $LFS/proc
+mount -vt sysfs sysfs $LFS/sys
+mount -vt tmpfs tmpfs $LFS/run
+
+cp /etc/resolv.conf $LFS/etc
+
+chroot "$LFS" /bin/sh
+

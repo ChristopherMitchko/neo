@@ -1,0 +1,279 @@
+Okay, I just finished building Linux From Scratch 5.0 all the way through with 
+busybox replacing most of the FSF packages.  The resulting system SEEMS to 
+work...
+
+My scripts are attached.  Here's what I did.
+
+The documentation I started with is the file "LFS-BOOK-5.0-HTML.tar.bz2", 
+available from www.linuxfromscratch.org.  Using that and a lot of work, I 
+created the three script files: "mktools-busybox.sh", "build.sh", and 
+"make-chroot.sh".
+
+About Linux From Scratch:
+
+LFS produces a working Linux distro entirely from source code.  Exactly how it 
+goes about this has evolved a bit over the years, version 5.0 of the 
+instructions uses a two stage process.  The first stage ("chapter 5") builds 
+a toolchain where everything has its paths bent to live in a subdirectory 
+under "/tools".  The second stage ("chapter 6") chroots into an environment 
+that contains nothing but the /tools directory created by Chapter 5, and then 
+creates the final system, deleting "/tools" at the end.  The point of this 
+two stage process is to isolate the finished system from the parent system, 
+and to make sure nothing leaks from the parent system that isn't specified by 
+the build process and built from source.
+
+What did I do:
+
+I replaced most of the packages the Linux From Scratch system's "chapter 5" 
+with busybox, and then used that intermediate system to build the final 
+system (which also replaced everything it could with busybox).  Thus busybox 
+was used as part of a development environment, to compile packages and build 
+a working linux system.
+
+The Chapter 5 toolchain consists of binutils, gcc, the 2.4 kernel headers, 
+glibc, busybox, make, and ncurses.  This is the "tools" directory created by 
+the mktools-busybox.sh script.  (Note: this script needs to run as root 
+because it creates a symlink /tools at the root level pointing to the tools 
+directory it's building.  This is necessary because the paths of all the 
+packages it's creating expect libraries and headers and the dynamic linker 
+and such to live under /tools, and to compile/link/run these suckers on the 
+parent system you need the symlink.)
+
+The actual process of disentangling these tools from the host system is a bit 
+involved, and means that binutils gets built three times and and gcc gets 
+built twice.  I commented the relevant section of the build script fairly 
+extensively if you'd like to know what's going on.  All this complexity is 
+for cleansing purposes.
+
+Note the sed production on line 171 of mktools-busybox.sh.  This finds all the 
+references to the dynamic linker, for all architectures, and prepends it with 
+"/tools".  (This could easily be adapted to adjust the thing to use uclibc 
+instead, but I haven't done that yet.)  Both uclibc's buildroot and Linux 
+From Scratch use a patch file for this.  One advantage of writing a sed 
+implementation is you learn how use the sucker... :)  I turned as many 
+patches as possible into sed scripts, which should be more robust against 
+version skew.
+
+In theory, I shouldn't have needed any other packages to make Chapter 5 work.  
+Just binutils, gcc, kernel headers, glibc, busybox, make and ncurses.  And in 
+fact, chapter 5 builds just fine with just those packages.  But it doesn't 
+work to build the finished LFS system in chapter 6. :)
+
+In reality, I needed a couple more things because busybox is incomplete and 
+buggy.  (I'm working on it.)  I had to build the following packages during 
+chapter 5 to compensate, but busybox can be upgraded to remove all these 
+requirements:
+
+I had to grab "sort" from coreutils because the busybox sort doesn't support 
+keys.  (I'm doing a rewrite to make it SuS3 compliant, bug me about that next 
+week.)
+
+I had to build gawk, because busybox awk needs major work.  Possibly on the 
+order of magnitude of the sed rewrite; I won't know until I sit down and try 
+it some more.  Right now it Just Doesn't Work (tm), and breaks deep in 
+./configure scripts that are a pain to debug.
+
+I had to build bash.  The busybox shell situation needs major work as well.  
+(The fact we have _three_ of them is a hint how big of an undertaking 
+unraveling this will be.  I want to find, combine, or write _one_ shell that 
+can replace ash, lash, and hush.  Yes, I know how big a pain this is going to 
+be, that's why I built bash for now.)
+
+I had to build diffutils, because busybox doesn't have "diff -u".  At all.  
+Bit of an oversight, if you ask me...
+
+I had to build gzip, because of the bugs in busybox's gzip and gunzip that I 
+mentioned earlier.  (When used on more than one file, the second and later 
+files are corrupt due to global variables that don't get re-initialized.  
+This is one of the big problems with "ash" too, by the way.  I looked at it a 
+bit, and started doing the same kind of complete rewrite of gzip and gunzip 
+that I did of bzip and bunzip.  This will take a while.)
+
+I had to build Larry Wall's patch because busybox patch doesn't support -i.  
+Shouldn't be too hard to fix.  Busybox patch also doesn't support any fuzz 
+factor, which is something Glenn and I have discussed.  To-do item...
+
+I also had to build miniperl from the perl package, because glibc needs perl 
+to build.  (Actually, it seems to build ok but then inisits on testing the 
+new glibc using a perl script, and refuses to install if it fails.  Once I 
+replace glibc with uclibc, this requirement should go away.)
+
+And THAT is what the "mktools-busybox.sh" script does.
+
+This "chapter 5" toolchain was then used to build a complete working Linux 
+system (Chapter 6) in a chroot environment.  The build.sh and make-chroot.sh 
+scripts actually do this.  The build.sh script sets up the chroot environment 
+(creates a build directory with the tools.tar.gz and sources.tar.gz extracted 
+into it, copies in the make-chroot.sh script, and chroots to execute it with 
+the path adjusted so that it starts with /tools/bin).  The make-chroot.sh 
+script runs in the chroot environment to actually compile the new system 
+using the tools built in chapter 5.
+
+The resulting system goes through the following steps:
+
+Make lots of directories, and a few symlinks.
+Create /etc/passwd and and /etc/group.
+makedev script to populate /dev directory (to be replaced with udev).
+install kernel headers
+build glibc, tweak gcc spec file to point to it.
+build binutils
+build gcc
+build busybox
+build man-pages.
+build coreutils, but only install src/sort and src/comm.  (Sort is used by a 
+number of things, and the version in busybox is incomplete.  comm is needed 
+to build perl, and busybox hasn't got one at all.)
+build zlib.
+build gawk (because busybox awk is horked).
+build ncurses
+build m4
+build bison
+build less (busybox ain't got one, just "more" which is no substitute.)
+build groff (needed for man pages, I think).
+build flex
+build perl
+build autoconf
+build automake
+build bash
+build libtool
+build diffutils
+delete busybox's gzip, gunzip, and uncompress (which need to be built for tar 
+to support z, but the need to be replaced with the real gzip's versions or 
+building kbd breaks.)
+build gzip
+build e2fsprogs
+build grub
+build man
+build make
+build patch
+write misc config files (/etc/inittab, /etc/services...)
+
+The result is a system you can chroot into and play with.  Build a kernel and 
+run grub and you should be able to boot into it.
+
+The following packages are built to test the development environment, but are 
+not installed:
+test findutils
+test vim
+test net-tools
+test inetutils
+test sed
+test file
+test bzip2
+test kbd
+test grep
+test modutils
+test procinfo
+test procps
+test psmisc
+test shadow
+test sysklogd
+test sysvinit
+test tar
+test util-linux
+
+
+To reproduce all this, you'll need a source tarball (sources.tar.gz).  I'd 
+file attach it, but it's 126 megabytes.  You can either email me to put it up 
+for download somewhere, or you can assemble it yourself from the following 
+files:
+
+In the "sources" directory:
+
+autoconf-2.57.tar.bz2, automake-1.7.6.tar.bz2, bash-2.05b-2.patch, 
+bash-2.05b.tar.bz2, binutils-2.14.tar.bz2, bison-1.875-attribute.patch, 
+bison-1.875.tar.bz2, busybox-config.bz2, busybox-cvs.tar.bz2, 
+diffutils-2.8.1.tar.bz2, e2fsprogs-1.34.tar.bz2, flex-2.5.4a.tar.bz2, 
+gawk-3.1.3-libexecdir.patch, gawk-3.1.3.tar.bz2, gcc-core-3.3.1.tar.bz2, 
+gcc-g++-3.3.1.tar.bz2, glibc-2.3.2-sscanf-1.patch, glibc-2.3.2.tar.bz2, 
+glibc-linuxthreads-2.3.2.tar.bz2, groff-1.19.tar.bz2, 
+grub-0.93-gcc33-1.patch, grub-0.93.tar.bz2, gzip-1.3.5.tar.bz2, 
+less-381.tar.bz2, libtool-1.5.tar.bz2, linux-2.4.22.tar.bz2, m4-1.4.tar.bz2, 
+make-3.80.tar.bz2, MAKEDEV-1.7.bz2, man-1.5m2.tar.bz2, 
+man-pages-1.60.tar.bz2, ncurses-5.3-etip-2.patch, ncurses-5.3.tar.bz2, 
+openssl-0.9.7d.tar.gz, patch-2.5.4.tar.bz2, perl-5.8.0.tar.bz2, 
+zlib-1.2.1.tar.bz2
+
+In the "sources/unused" directory:
+
+bzip2-1.0.2.tar.bz2, coreutils-5.0-hostname-2.patch, coreutils-5.0.tar.bz2, 
+file-4.04.tar.bz2, findutils-4.1.20.tar.bz2, grep-2.5.1.tar.bz2, 
+inetutils-1.4.2.tar.bz2, kbd-1.08-more-programs.patch, kbd-1.08.tar.bz2, 
+modutils-2.4.25.tar.bz2, net-tools-1.60-miitool-gcc33-1.patch, 
+net-tools-1.60.tar.bz2, procinfo-18.tar.bz2, procps-3.1.11.tar.bz2, 
+psmisc-21.3.tar.bz2, sed-4.0.7.tar.bz2, shadow-4.0.3-newgrp-fix.patch, 
+shadow-4.0.3.tar.bz2, sysklogd-1.4.1.tar.bz2, sysvinit-2.85.tar.bz2, 
+tar-1.13.25.tar.bz2, util-linux-2.12.tar.bz2, vim-6.2.tar.bz2
+
+All the patch files are available from the Linux From Scratch website as part 
+of their LFS 5.0 source.  None of them are busybox specific, they all fix 
+various minor bugs in the original packages.  The LFS-BOOK file explains what 
+they all do; I actually discarded a number of the LFS patches and turned a 
+lot of the rest into minor sed scripts.
+
+The "unused" subdirectory contains the packages that busybox successfully 
+replaced, and are thus only built as a test of the development environment, 
+and not actually installed.
+
+The fourth script (buildall.sh) does chapter 5 and chapter 6 in sequence, 
+building a finished system straight from a tarball.  Yes, it has to run as 
+root.  If you want to play with fakeroot or something, be my guest.
+
+My to-do list:
+
+Fix all the busybox deficiencies to get rid of coreutils, gawk, bash, 
+diffutils, gzip, patch, and less.  This means implementing/fixing:  sort, 
+comm, awk, sh, diff, gzip, gunzip, patch, less.  And while we're add it, 
+implement the write half of "ar" too...  And I have a note that "split" is 
+missing, but chapter 6 seems ok without it...?
+
+Update all packages to the latest versions.
+
+Use 2.6 kernel, building libc against the 2.6 kernel headers from: 
+http://ep09.pld-linux.org/~mmazur/linux-libc-headers/
+
+Run the various "make test" productions on the packages I'm not actually 
+using.  (Apparently, this means installing tcl, which is icky.)
+
+Replace glibc with uclibc.  (This means I can throw perl to the end as an 
+optional package.)
+
+Implement various missing bits of bzip package (bzip2, bzcat, bzless, etc) in 
+busybox.
+
+Add dropbear, python...
+
+Make a desktop out of it with x11, xfce...
+
+Investigate more closely what the ./configure steps from each package look 
+like in a GNU environment and a busybox environment.  Is ./configure 
+disabling anything because it detects (or thinks it detects) missing 
+functionality?  I already got busybox sed to lie for --version to make 
+binutils happy.  Stupid FSF software...
+
+Go through Single Unix Spec V3 and compare it to busybox.
+
+The binaries produced in /tools are way too big.  I think there might have 
+been two copies of glibc in the path or something.  That means stuff gets 
+linked in statically, but it still needs the shared library.  Strange, I 
+know.  Try it; symlink /lib to /usr/lib and dump the conents of /lib into 
+/usr/lib.  Now build software with a standard gcc and check the resulting 
+binary sizes.  Icky, isn't it?
+
+Rob
+
+P.S.  Oh yeah, busybox "find" is horked too.  Run "make mrproper" on the linux 
+kernel source and the following kind of thing makes busybox spit out a usage 
+message instead of finding:
+
+  find . \( -size 0 -o -name .depend \) -type f -print | xargs rm -f
+
+Our find doesn't do parentheses, it seems.  Another to-do item...
+-------------- next part --------------
+A non-text attachment was scrubbed...
+Name: stuff.tgz
+Type: application/x-tgz
+Size: 10805 bytes
+Desc: not available
+Url : http://lists.busybox.net/pipermail/busybox/attachments/20040505/cbc52ccc/attachment.bin 
+

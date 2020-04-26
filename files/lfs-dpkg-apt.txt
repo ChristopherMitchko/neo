@@ -1,0 +1,342 @@
+AUTHOR: Chris Wheeler <topher.wheeler at yahoo dot com>
+
+DATE: 2008-11-05
+
+LICENSE: GNU Free Documentation License Version 1.2
+
+SYNOPSIS: Use dpkg (.deb) package management on LFS 6.3.
+
+DESCRIPTION:
+This is how to compile and install dpkg - The Debian Package Manager - for LFS
+6.3. This will allow pre-compiled (.deb) packages or custom compiled BLFS
+packages to be installed/uninstalled through a package manager.
+
+ATTACHMENTS:
+* http://www.linuxfromscratch.org/hints/downloads/files/ATTACHMENTS/dpkg/status
+
+PREREQUISITES:
+This hint requires that you have sufficient knowledge of LinuxFromScratch.
+Some previous knowledge of debian/dpkg would also help (a lot).
+
+HINT:
+ This applies specifically to LFS 6.3 but could be adopted to other systems as
+well.  Installing more than one package manager on a system is not recommended.
+I'll start by setting up dpkg, then move on to showing you how to setup apt for
+those interested in prebuilt (including source) packages.  And finally I will
+show you how to create your own binary .deb packages from dhcpcd and lynx in the
+BLFS 6.3 book.
+
+ There have been many half-baked attempts at similar documents but this one is
+the real deal.  I know because I am typing this in Kate - in KDE - in X11 , and
+everything beyond my LinuxFromScratch base setup was installed through
+dpkg (except for dpkg itself and a few dependencies).  So buckle up; this will
+save you the 24 solid hours it took me to figure out how to do this.
+
+ First of all you need dpkg-1.13.25.tar.gz and po4a_0.29.orig.tar.gz from
+http://www.debian.org/distrib/packages   get em!  I strongly suggest using the
+packages from Debian 4.0 [etch] (currently the stable branch) because, not only
+is it considered stable, but the package versions are slightly older than the
+LFS 6.3 equivalents, for the most part, which means easy dependency handling if
+you decide to merge in other packages from their repository.
+
+ To compile "dpkg" you need to first compile and install "po4a" which needs
+"Module::Build-0.2808" from the perl modules in BeyondLinuxFromScratch 6.3.  So
+go get "Module::Build" from BLFS.  You will have to compile all of its
+dependencies in reverse order.  Just install the ones that are not optional. 
+Don't bother with the check part of the compiles either; that will just create
+more dependencies for you to deal with.  Compile and install "Module::Build".
+
+ Now would be a good time to make sure you properly setup LC* and LANG*
+environment variables according to LFS 6.3 chap 7.9 "Bash Shell Startup Files".
+Compile and install "po4a".  Run "gcc --print-libgcc-file-name" without quotes. 
+This will give a clue to your architecture type (i686 etc need to use i386). 
+Compile "dpkg" with the command line: 
+
+ ./configure --prefix=/usr --sysconfdir=/etc --localstatedir=/var \
+ --build=i386-gnu-linux
+
+* you can omit --prefix=/usr to use /usr/local; I believe this also determines
+where your .deb packages will be installed.
+* I also include "--without-dselect" because I still have nightmares about that
+piece of junk.
+* --build=CPU-COMPANY-SYSTEM  ;what I provided above is for all x86 setups
+(except amd64 I suppose).  You can still optimize the packages you create (ie.
+CFLAGS="-O3 -march=i686").
+
+..then do "make" and as root "make install" as usual.
+while you are root do:
+ touch /var/dpkg/status
+ touch /var/dpkg/available
+
+That's all there is to it!  Well unless you actually want to do something with
+it...
+
+- Phase [2] - INSTALLING APT -  
+- you can skip to phase [3] if you just want to create your own packages.
+
+ This section is for people who may want to use packages created by others. 
+First of all you need to create some dummy entries in /var/dpkg/status to make
+dpkg think that some basic GNU programs and libraries are installed (because
+they are). I have attached my working (but needs working) "status" file at the
+top of this document.  It seems one can get away with just the package name,
+version, architecture, and status.  A proper mock-up of a real status file with
+all the resulting debian packages would be nicer though. There might be a
+clean way to do this with the "equivs" program.
+
+ You can ignore the messages:
+  dpkg: serious warning: files list ...
+
+ Those are a result of the crude, but effective status file.
+I achieved the "status" file by running each LFS source package name through
+debian's package search tool with the search source packages option selected -
+which then showed me what .deb's are created from the source tarball.  I didn't
+bother to include the <package>-doc.deb's though.
+
+ For the installation of "apt" on LFS 6.3 I only cover installing with the
+binary: apt_0.6.46.4-0.1_i386.deb   (the i386 part will differ for other cpu's)
+So get it from http://www.debian.org/distrib/packages and also get the
+"sysv-rc" package:  sysv-rc_2.86.ds1-38+etchnhalf.1_all.deb
+
+Run:
+ ar xv sysv-rc_*_all.deb
+ tar xvf data.tar.gz
+  (and as root)
+ cp ./usr/sbin/update-rc.d /usr/sbin/
+ dpkg -i apt_*_i386.deb
+
+ You should now have "apt" installed, but not fully configured.  To finish the
+setup (as root):
+
+ cd /etc/apt
+ cp /usr/share/doc/apt/examples/configure-index.gz ./apt.conf.gz
+ gunzip ./apt.conf.gz
+
+ Edit the "apt.conf" file with "vi" or some other editor if you have one
+installed.  Use // to comment out any lines you are unsure of.  Specifically:   
+
+ // any lines with "Pre-Invoke" "Post-Invoke" for auto re-mounting.
+ // any lines with "pre-configure"
+ // ftp & http proxy stuff or edit it at least.
+ // the Dl-Limit "7" in the http section! (and I thought the us mirror was
+                                           really slow!)
+ - Remove the last three lines of "junk" at bottom of file
+ - edit /var/lib/dpkg/status to just be /var/dpkg/status
+ - edit Cache-Limit to be "33554432" or maybe just comment it out.
+ - edit mount "/cdrom"; to be: mount "/media/cdrom"; or whatever you use.
+
+(done, save & quit)
+
+(run this for debian repository):
+ cp /usr/share/doc/apt/examples/sources.list /etc/apt/
+ apt-get update
+ apt-get -f install
+
+There you gots it. apt
+
+Phase [3] - BUILD YOUR OWN PACKAGES! -
+
+  First we'll start with "dhcpcd" from bLFS as an example (it seems to work
+better than debian's version).  So download "dhcpcd-3.0.19.tar.bz2" from the
+BLFS 6.3 book and un-pack it.  Run the "make" command inside the source
+directory like the book suggests, then instead of going straight to "make
+install" do this:
+
+ mkdir ./debian
+ (then, as root)
+ make DESTDIR=./debian/ install
+
+ Now if you look in the "debian" directory that you created inside your package
+source directory, it should have the files installed in the "sbin" , "usr" ,
+and "etc" folders just like it would if you installed it to / .  Most packages
+that use the automake/autoconf setup (most GNU programs) allow for the
+"DESTDIR=" flag for "make install".  If unsure, check the Makefile and look for
+$(DESTDIR).  This diverts the package install at the last minute, but the
+--prefix=/usr or whatever is still hard-coded into the program.  So the program
+should work properly when dpkg expands the <package>.deb file to the root folder
+of your system.  
+
+ Next get and un-pack the blfs-bootscripts-20080816 like BLFS
+recommends.  Run "make DESTDIR=/path/to/dhcpcd/debian/ install-service-dhcpcd"
+without the quotes.  This should install the dhcpcd bootscript somewhere down
+the etc/sysconfig/... branch of the same ./debian tree.  
+
+ This next part is very easy but pay attention. The config files in the BLFS
+book need to be slightly modified.  The first two lines need a ./path/to instead
+of just /path/to ;that's "dot slash path" instead of just "slash path". And you
+need to run the install & cat command code blocks from inside the ./debian dir.
+ 
+ So the first two original lines:
+
+  install -v -d /etc/sysconfig/network-devices/ifconfig.eth0 &&
+  cat > /etc/sysconfig/network-devices/ifconfig.eth0/dhcpcd << "EOF"
+
+...are now:
+
+  install -v -d ./etc/sysconfig/network-devices/ifconfig.eth0 &&
+  cat > ./etc/sysconfig/network-devices/ifconfig.eth0/dhcpcd << "EOF"
+
+...then you can hit enter (inside the ./debian directory) and continue pasting
+the rest of the file.  Note: It may be a good idea to edit the dhcpcd config
+file that is now in the ./debian/etc/.../ifconfig.eth0/ folder and remove the:
+"<insert appropriate start options here>"  lines.  I just left "" and "-k" for
+mine and everything works fine.
+
+ Finally make it a .deb package file.  The Debian Binary Package Building HOWTO
+is a great source for info on making binary .deb's (especially section 4).  Now
+let's make a "control" file for our package.  It should have at least:
+
+Package: <package name>
+Version: <package version>
+Architecture: i386
+Maintainer: Your Name <your.name@somewhere.com>
+Description: Your package description goes here.  There can be no blank lines
+in the control file. So if you need a blank line in the description do this
+.
+yep, just a single dot will work, and it will show as a blank line.
+
+ The Debian New Maintainer's Guide and The Debian Policy Manual are also good
+sources on how to create and manage .deb files.  You may also put a "Depends: "
+line in the middle of your control file to include mandatory dependencies.  I
+prefer not to append the debian revision to my package versions (x.y.z instead
+of x.y.z-1) that way it seems debian will ignore packages of the same version
+even if they have a high revision like -13 and it's less conflict with existing
+packages.  
+
+ You can use the "ldd <filename>" command to find out which shared libraries
+your program uses and include those as depends:
+
+$ldd dhcpcd
+        linux-gate.so.1 =>  (0xb7f27000)
+        libc.so.6 => /lib/libc.so.6 (0xb7df4000)
+        /lib/ld-linux.so.2 (0xb7f28000)
+
+ You can then run the library names in debian.org's package search engine with
+"search package contents" selected to find out which official package they come
+from and even trace that back to the source package.  However you want to
+handle dependencies is up to you; just ignore them if you want/dare.  Either
+way I definitely suggest further reading on at least that subject in the above
+mentioned documents.
+
+ Go to the ./debian folder for your package and :
+
+  mkdir DEBIAN
+ 
+ Then edit/save your "control" file so that it's : ./debian/DEBIAN/control
+
+ From the folder just below ./debian (your package source dir) run :
+
+  find ./debian -type d | xargs chmod 755
+
+ And Finally :
+
+  dpkg-deb --build debian
+
+ Always use dpkg-deb for manipulating .deb files (it's part of dpkg).  Rename
+the resulting debian.deb package to whatever you like dot deb.  The official way
+is packagename_x.y.z-#_arch.deb  .  It's probably a good idea to use i686 or
+pentium3 or whatever for the arch part if you use -march=cpu flags with gcc. 
+That way you will know which packages are optimized.  Or at least list your
+optimizations in the description part of the control file.
+
+ To install your new package run (as root):
+
+  dpkg -i packagename.deb
+  
+ To uninstall your package run (as root):
+
+  dpkg -r packagename
+        ... -r leaves configuration files in place
+
+  dpkg --purge packagename
+        ... --purge removes entire program and config files
+
+SECOND PACKAGE EXAMPLE - Lynx -
+
+ Get Lynx-2.8.6rel.5 and open BLFS 6.3 page for it in chap 15.  After you
+unpack the source tarball to a directory do not change to it.  Instead, in the
+directory you just unpacked from (just under the source tree):
+
+  mkdir build
+  cd build
+  ../lynx2-8-6/configure --prefix=/usr \
+                         --sysconfdir=/etc/lynx \
+                         --datadir=/usr/share/doc/lynx-2.8.6rel.5 \
+                         --with-zlib \
+                         --with-bzlib \
+                         --with-screen=ncursesw \
+                         --enable-locale-charset &&
+		make
+
+ This causes new files created by the compilation to be place in ./build
+instead of the ./lynx2-8-6 dir.  It's just good practice so I thought I'd
+include this method.  Now as root (from inside build dir):
+
+  mkdir debian
+  make DESTDIR=./debian/ install
+
+ Now like before, change to the ./debian dir and (as BLFS recommends) run:
+
+  cd debian
+  chgrp -v -R root ./usr/share/doc/lynx-2.8.6rel.5/lynx_doc
+
+ Don't forget to add the dot in front of /usr/share/....  ./usr/share/....!
+You can then run the sed commands in the same manner; from inside the ./debian
+dir and place a dot in front of all those path names (./etc/....).  The "dot"
+refers to the current directory instead of the top level / .  So the ./debian
+dir acts as a faked root dir.
+
+ Finally create your control file in ./debian/DEBIAN/control (control is a file
+not a dir).  Then make your .deb the same way as with dhcpcd.  The chmod
+command changes the permissions to the proper settings.  Take note that
+whatever user you compile with will have ownership of the resulting program
+files.  You may want to run (from inside ./debian dir) something like:
+
+  chown -R root:root *
+          as root, of course right before you make your .deb
+
+That's it.
+
+FINAL NOTES:
+
+ * Aptitude, Synaptic, and Kpackage are all great interfaces for
+adding/removing .deb's on your system.
+
+ * If you install apt and plan to use packages from a public repository, you
+may want to place all the packages that represent your base LFS system on
+"hold".
+
+ * If you use Aptitude, I recommend unchecking the first three options under
+Options -> Dependency handling.
+
+ * The debian style for rc startup scripts is a little different than LFS. 
+This can be a good thing since debian likes to bog down the start-up.  If you
+install official debian packages you will need to mkdir rcS.d , rc0.d ... rc6.d
+and init.d under /etc and "touch /etc/default/rcS".  Or create symlinks to the
+proper /etc/rc.d/... dirs and init.d (recommended).  Install the official
+"adduser-ng" package. The "apt-utils" and "libdb4.4" will be necessary as well
+for an xorg install. The last big issue with official .deb packages is
+"debconf"...  To install this package you first have to unpack it manually:
+
+  ar xv debconf_1.5.11etch2_all.deb
+  tar xvf data.tar.gz
+  cp -r ./usr/share/perl5/Debconf /usr/share/perl5/.
+
+ Only then can you install "debconf" because of its circular dependency on
+itself.
+
+ That's all for now.  I wrote this based on memory (or lack of) and a couple
+pages of scribbled notes I used to document my progress.  So I could have
+missed a step somewhere.  Comments, questions, and suggestions are more than
+welcome; send them to my email address at the top of this document.
+
+
+ACKNOWLEDGEMENTS:
+  * Ben Roberts <benr@wam.umd.edu> for previous attempt at this.
+  * Chr. Clemens Lee for The Debian Binary Package HOWTO.
+  * BLFS Development Team for dhcpcd and lynx walkthrough.
+  * Gerard Beekmans for LFS.
+  * Your personal Savior.
+
+CHANGELOG:
+[2008-11-05]
+  * Initial hint.

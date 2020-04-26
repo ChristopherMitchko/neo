@@ -1,0 +1,21 @@
+#!/usr/bin/env lua
+--[
+--[
+--[
+--[
+--[
+----------------------------------------------[START}-----------------------------------------------------
+local neolib = require "neolib"
+
+neolib.control()
+io.stdout:write("Would you like to continue building:(y/n)?   ", pkg, "\n")
+local answer = io.stdin:read()
+if answer=="y" then
+os.execute("wget " .. url)
+neolib.decomp()
+neolib.start()
+elseif answer=="n" then
+os.exit()
+end
+print("____________________________________________________________________")
+----------------------------------------------[END}-------------------------------------------------------

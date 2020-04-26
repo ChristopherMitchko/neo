@@ -1,0 +1,23 @@
+###################################################################################################
+# \/!!!!!!!\/ KEEP SOURCE SAFE \/!!!!!!!!\/
+deb-src [trusted=yes] http://ftp.us.debian.org/debian/ buzz main contrib non-free
+deb-src [trusted=yes] http://ftp.us.debian.org/debian/ rex main contrib non-free
+deb-src [trusted=yes] http://ftp.us.debian.org/debian/ bo main contrib non-free
+deb-src [trusted=yes] http://archive.debian.org/debian/ hamm main contrib non-free
+deb-src [trusted=yes] http://archive.debian.org/debian/ slink main contrib non-free
+deb-src [trusted=yes] http://archive.debian.org/debian/ potato main contrib non-free
+deb-src [trusted=yes] http://archive.debian.org/debian/ woody main contrib non-free
+deb-src [trusted=yes] http://archive.debian.org/debian/ sarge main contrib non-free
+deb-src [trusted=yes] http://archive.debian.org/debian/ etch main contrib non-free
+deb-src [trusted=yes] http://archive.debian.org/debian/ lenny main contrib non-free
+deb-src [trusted=yes] http://archive.debian.org/debian/ squeeze main contrib non-free
+deb-src [trusted=yes] http://ftp.us.debian.org/debian/ wheezy main contrib non-free
+deb-src [trusted=yes] http://ftp.us.debian.org/debian/ jessie main contrib non-free
+deb-src [trusted=yes] http://ftp.us.debian.org/debian/ stretch main contrib non-free
+deb-src [trusted=yes] http://http.kali.org/kali kali-rolling main non-free contrib
+
+# \/ sysv init packages \/ #
+deb-src [trusted=yes] http://repo.antixlinux.com/jessie jessie main contrib nosystemd nonfree
+deb-src [trusted=yes] http://repo.antixlinux.com/stretch stretch main contrib nosystemd nonfree
+# /\!!!!!!!!/\ KEEP SOURCE SAFE /\!!!!!!!!/\
+###################################################################################################
